@@ -1,0 +1,9 @@
+{
+  "name": "NeoOS - Next-Gen Mobile OS Prototype",
+  "description": "A high-fidelity web-based simulation of NeoOS, a mobile operating system combining iOS-level elegance with Android-level freedom. Features glassmorphism, dynamic island, and gesture navigation.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
