@@ -53,7 +53,7 @@ import {
   X
 } from 'lucide-react';
 import { SYSTEM_APPS } from './constants';
-import { AppConfig } from './types';
+import { AppConfig, Photo } from './types';
 import { soundService } from './services/soundService';
 
 // --- Sub-components ---
@@ -227,7 +227,12 @@ const AppIcon = ({ app, onClick }: { app: AppConfig, onClick: () => void }) => {
   );
 };
 
-const ControlCenter = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
+const ControlCenter = ({ isOpen, onClose, settings, setSettings }: { isOpen: boolean, onClose: () => void, settings: any, setSettings: any }) => {
+  const handleToggle = (id: string) => {
+    soundService.play('tap');
+    setSettings((prev: any) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -241,9 +246,24 @@ const ControlCenter = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
           <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
             {/* Connectivity Block */}
             <div className="glass p-4 rounded-3xl grid grid-cols-2 gap-3">
-              <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center"><Plane size={20} /></div>
-              <div className="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center"><Wifi size={20} /></div>
-              <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center"><Bluetooth size={20} /></div>
+              <div 
+                onClick={() => handleToggle('airplaneMode')}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors cursor-pointer ${settings.airplaneMode ? 'bg-orange-500' : 'bg-white/10'}`}
+              >
+                <Plane size={20} />
+              </div>
+              <div 
+                onClick={() => handleToggle('wifi')}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors cursor-pointer ${settings.wifi ? 'bg-blue-500' : 'bg-white/10'}`}
+              >
+                <Wifi size={20} />
+              </div>
+              <div 
+                onClick={() => handleToggle('bluetooth')}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors cursor-pointer ${settings.bluetooth ? 'bg-blue-600' : 'bg-white/10'}`}
+              >
+                <Bluetooth size={20} />
+              </div>
               <div className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center"><Signal size={20} /></div>
             </div>
 
@@ -264,7 +284,10 @@ const ControlCenter = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
             {/* Brightness & Volume */}
             <div className="glass p-4 rounded-3xl flex flex-col gap-4">
               <div className="flex-1 bg-white/10 rounded-2xl relative overflow-hidden">
-                <div className="absolute bottom-0 left-0 right-0 h-2/3 bg-white/20" />
+                <div 
+                  className="absolute bottom-0 left-0 right-0 bg-white/20 transition-all" 
+                  style={{ height: `${settings.brightness}%` }}
+                />
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <Sun size={20} className="opacity-50" />
                 </div>
@@ -272,7 +295,10 @@ const ControlCenter = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
             </div>
             <div className="glass p-4 rounded-3xl flex flex-col gap-4">
               <div className="flex-1 bg-white/10 rounded-2xl relative overflow-hidden">
-                <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-white/20" />
+                <div 
+                  className="absolute bottom-0 left-0 right-0 bg-white/20 transition-all" 
+                  style={{ height: `${settings.volume}%` }}
+                />
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <Volume2 size={20} className="opacity-50" />
                 </div>
@@ -280,10 +306,20 @@ const ControlCenter = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
             </div>
 
             {/* Toggles */}
-            <div className="glass p-4 rounded-2xl flex items-center justify-center cursor-pointer" onClick={() => soundService.play('tap')}><Bell size={20} /></div>
-            <div className="glass p-4 rounded-2xl flex items-center justify-center cursor-pointer" onClick={() => soundService.play('tap')}><Moon size={20} /></div>
-            <div className="glass p-4 rounded-2xl flex items-center justify-center cursor-pointer" onClick={() => soundService.play('tap')}><Maximize2 size={20} /></div>
-            <div className="glass p-4 rounded-2xl flex items-center justify-center cursor-pointer" onClick={() => soundService.play('tap')}><Settings size={20} /></div>
+            <div 
+              onClick={() => handleToggle('notifications')}
+              className={`glass p-4 rounded-2xl flex items-center justify-center cursor-pointer transition-colors ${settings.notifications ? 'bg-rose-500/20 text-rose-500' : 'opacity-40'}`}
+            >
+              <Bell size={20} />
+            </div>
+            <div 
+              onClick={() => handleToggle('focus')}
+              className={`glass p-4 rounded-2xl flex items-center justify-center cursor-pointer transition-colors ${settings.focus ? 'bg-purple-500/20 text-purple-500' : 'opacity-40'}`}
+            >
+              <Moon size={20} />
+            </div>
+            <div className="glass p-4 rounded-2xl flex items-center justify-center cursor-pointer opacity-40"><Maximize2 size={20} /></div>
+            <div className="glass p-4 rounded-2xl flex items-center justify-center cursor-pointer opacity-40"><Settings size={20} /></div>
           </div>
 
           <div 
@@ -379,39 +415,44 @@ const MusicApp = () => {
   );
 };
 
-const SettingsApp = () => {
+const SettingsApp = ({ settings, setSettings }: { settings: any, setSettings: any }) => {
   const sections = [
     {
       title: 'Personal',
       items: [
-        { icon: User, label: 'Neo Account', detail: 'Sandip Hembram', color: 'bg-blue-500' },
-        { icon: Shield, label: 'Privacy & Security', color: 'bg-emerald-500' },
+        { id: 'account', icon: User, label: 'Neo Account', detail: 'Sandip Hembram', color: 'bg-blue-500' },
+        { id: 'privacy', icon: Shield, label: 'Privacy & Security', color: 'bg-emerald-500' },
       ]
     },
     {
       title: 'Connectivity',
       items: [
-        { icon: Wifi, label: 'Wi-Fi', detail: 'Neo_Fiber_5G', color: 'bg-blue-400' },
-        { icon: Bluetooth, label: 'Bluetooth', detail: 'On', color: 'bg-indigo-500' },
-        { icon: Plane, label: 'Airplane Mode', toggle: true, color: 'bg-orange-500' },
+        { id: 'wifi', icon: Wifi, label: 'Wi-Fi', detail: settings.wifi ? 'Neo_Fiber_5G' : 'Off', color: 'bg-blue-400', toggle: true },
+        { id: 'bluetooth', icon: Bluetooth, label: 'Bluetooth', detail: settings.bluetooth ? 'On' : 'Off', color: 'bg-indigo-500', toggle: true },
+        { id: 'airplaneMode', icon: Plane, label: 'Airplane Mode', color: 'bg-orange-500', toggle: true },
       ]
     },
     {
       title: 'System',
       items: [
-        { icon: Bell, label: 'Notifications', color: 'bg-rose-500' },
-        { icon: Moon, label: 'Focus', color: 'bg-purple-500' },
-        { icon: Maximize2, label: 'Display & Brightness', color: 'bg-sky-500' },
+        { id: 'notifications', icon: Bell, label: 'Notifications', color: 'bg-rose-500', toggle: true },
+        { id: 'focus', icon: Moon, label: 'Focus', color: 'bg-purple-500', toggle: true },
+        { id: 'brightness', icon: Maximize2, label: 'Display & Brightness', color: 'bg-sky-500' },
       ]
     },
     {
       title: 'General',
       items: [
-        { icon: Info, label: 'About', color: 'bg-zinc-500' },
-        { icon: Globe, label: 'Language & Region', detail: 'English (US)', color: 'bg-zinc-400' },
+        { id: 'about', icon: Info, label: 'About', color: 'bg-zinc-500' },
+        { id: 'language', icon: Globe, label: 'Language & Region', detail: 'English (US)', color: 'bg-zinc-400' },
       ]
     }
   ];
+
+  const handleToggle = (id: string) => {
+    soundService.play('tap');
+    setSettings((prev: any) => ({ ...prev, [id]: !prev[id] }));
+  };
 
   return (
     <div className="flex-1 flex flex-col bg-zinc-950 overflow-y-auto">
@@ -426,6 +467,7 @@ const SettingsApp = () => {
                 {section.items.map((item, j) => (
                   <div 
                     key={j}
+                    onClick={() => item.toggle && handleToggle(item.id)}
                     className={`flex items-center justify-between p-4 hover:bg-white/5 transition-colors cursor-pointer ${j !== section.items.length - 1 ? 'border-b border-white/5' : ''}`}
                   >
                     <div className="flex items-center gap-3">
@@ -437,8 +479,11 @@ const SettingsApp = () => {
                     <div className="flex items-center gap-2">
                       {item.detail && <span className="text-sm opacity-40">{item.detail}</span>}
                       {item.toggle ? (
-                        <div className="w-10 h-6 rounded-full bg-white/10 p-1">
-                          <div className="w-4 h-4 rounded-full bg-white" />
+                        <div className={`w-10 h-6 rounded-full p-1 transition-colors ${settings[item.id] ? 'bg-emerald-500' : 'bg-white/10'}`}>
+                          <motion.div 
+                            animate={{ x: settings[item.id] ? 16 : 0 }}
+                            className="w-4 h-4 rounded-full bg-white" 
+                          />
                         </div>
                       ) : (
                         <ChevronRight size={16} className="opacity-20" />
@@ -773,21 +818,100 @@ const WeatherApp = () => {
   );
 };
 
-const CameraApp = () => {
+const CameraApp = ({ photos, setPhotos }: { photos: Photo[], setPhotos: any }) => {
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [flash, setFlash] = useState(false);
+
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    const startCamera = async () => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: 'user',
+            width: { ideal: 1080 },
+            height: { ideal: 1920 }
+          } 
+        });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          setIsStreaming(true);
+        }
+      } catch (err) {
+        console.error("Error accessing camera:", err);
+      }
+    };
+
+    startCamera();
+
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  const takePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      setFlash(true);
+      setTimeout(() => setFlash(false), 100);
+      
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        const newPhoto: Photo = {
+          id: Math.random().toString(36).substr(2, 9),
+          url: dataUrl,
+          timestamp: Date.now(),
+        };
+        setPhotos((prev: Photo[]) => [newPhoto, ...prev]);
+        soundService.play('camera' as any);
+      }
+    }
+  };
+
   return (
     <div className="flex-1 bg-black flex flex-col overflow-hidden relative">
+      <canvas ref={canvasRef} className="hidden" />
+      
       {/* Viewfinder */}
-      <div className="flex-1 rounded-[3rem] overflow-hidden relative m-2">
-        <img 
-          src="https://picsum.photos/seed/neoos-camera/1080/1920" 
-          alt="Viewfinder" 
-          className="w-full h-full object-cover"
-          referrerPolicy="no-referrer"
+      <div className="flex-1 rounded-[3rem] overflow-hidden relative m-2 bg-zinc-900">
+        <video 
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className={`w-full h-full object-cover transition-opacity duration-500 ${isStreaming ? 'opacity-100' : 'opacity-0'}`}
         />
+        
+        <AnimatePresence>
+          {flash && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-white z-50"
+            />
+          )}
+        </AnimatePresence>
+
         <div className="absolute inset-0 border border-white/20 pointer-events-none" />
         
         {/* Focus Ring Overlay */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 border border-yellow-400/50 rounded-lg" />
+        
+        {!isStreaming && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full border-4 border-white/20 border-t-white animate-spin" />
+          </div>
+        )}
       </div>
 
       {/* Controls */}
@@ -801,14 +925,19 @@ const CameraApp = () => {
         </div>
 
         <div className="flex items-center gap-12">
-          <div className="w-12 h-12 rounded-lg border-2 border-white/20 overflow-hidden">
-            <img src="https://picsum.photos/seed/gallery/100/100" alt="Last Photo" referrerPolicy="no-referrer" />
+          <div className="w-12 h-12 rounded-lg border-2 border-white/20 overflow-hidden bg-zinc-800">
+            {photos.length > 0 ? (
+              <img src={photos[0].url} alt="Last Photo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center opacity-20"><Image size={20} /></div>
+            )}
           </div>
           
           <motion.button
             whileTap={{ scale: 0.9 }}
-            onClick={() => soundService.play('tap')}
-            className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center p-1"
+            onClick={takePhoto}
+            disabled={!isStreaming}
+            className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center p-1 disabled:opacity-50"
           >
             <div className="w-full h-full rounded-full bg-white" />
           </motion.button>
@@ -825,34 +954,68 @@ const CameraApp = () => {
   );
 };
 
-const GalleryApp = () => {
+const GalleryApp = ({ photos }: { photos: Photo[] }) => {
+  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+
   return (
-    <div className="flex-1 bg-black overflow-y-auto no-scrollbar">
-      <div className="p-6">
+    <div className="flex-1 bg-black overflow-y-auto no-scrollbar relative">
+      <div className="p-6 pb-32">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold">Library</h1>
           <button className="text-blue-500 font-semibold">Select</button>
         </div>
 
-        <div className="grid grid-cols-3 gap-1">
-          {Array.from({ length: 24 }).map((_, i) => (
-            <motion.div 
-              key={i}
-              whileHover={{ scale: 0.98 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => soundService.play('tap')}
-              className="aspect-square bg-white/5 overflow-hidden cursor-pointer"
-            >
-              <img 
-                src={`https://picsum.photos/seed/gallery-${i}/300/300`} 
-                alt={`Photo ${i}`} 
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            </motion.div>
-          ))}
-        </div>
+        {photos.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 opacity-30 gap-4">
+            <Image size={64} />
+            <p className="font-medium">No Photos Yet</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-1">
+            {photos.map((photo) => (
+              <motion.div 
+                key={photo.id}
+                whileHover={{ scale: 0.98 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  soundService.play('tap');
+                  setSelectedPhoto(photo);
+                }}
+                className="aspect-square bg-white/5 overflow-hidden cursor-pointer"
+              >
+                <img 
+                  src={photo.url} 
+                  alt="Gallery Item" 
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
+
+      <AnimatePresence>
+        {selectedPhoto && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="fixed inset-0 z-[100] bg-black flex flex-col"
+          >
+            <div className="p-4 flex items-center justify-between">
+              <button onClick={() => setSelectedPhoto(null)} className="text-blue-500 font-semibold">Done</button>
+              <div className="flex gap-6">
+                <Heart size={20} className="opacity-60" />
+                <Trash2 size={20} className="opacity-60" />
+              </div>
+            </div>
+            <div className="flex-1 flex items-center justify-center p-4">
+              <img src={selectedPhoto.url} alt="Selected" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" referrerPolicy="no-referrer" />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="fixed bottom-0 left-0 right-0 p-4 glass-dark flex justify-around items-center z-10">
         <div className="flex flex-col items-center gap-1 text-blue-500"><Image size={20} /><span className="text-[9px] font-bold uppercase tracking-widest">Photos</span></div>
@@ -1156,13 +1319,13 @@ const SystemApp = () => {
   );
 };
 
-const AppWindow = ({ app, onClose }: { app: AppConfig, onClose: () => void }) => {
+const AppWindow = ({ app, onClose, photos, setPhotos, settings, setSettings }: { app: AppConfig, onClose: () => void, photos: Photo[], setPhotos: any, settings: any, setSettings: any }) => {
   const renderAppContent = () => {
     switch (app.id) {
       case 'music':
         return <MusicApp />;
       case 'settings':
-        return <SettingsApp />;
+        return <SettingsApp settings={settings} setSettings={setSettings} />;
       case 'phone':
         return <PhoneApp />;
       case 'messages':
@@ -1172,9 +1335,9 @@ const AppWindow = ({ app, onClose }: { app: AppConfig, onClose: () => void }) =>
       case 'weather':
         return <WeatherApp />;
       case 'camera':
-        return <CameraApp />;
+        return <CameraApp photos={photos} setPhotos={setPhotos} />;
       case 'gallery':
-        return <GalleryApp />;
+        return <GalleryApp photos={photos} />;
       case 'files':
         return <FilesApp />;
       case 'calendar':
@@ -1438,6 +1601,16 @@ export default function App() {
   const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [settings, setSettings] = useState({
+    airplaneMode: false,
+    wifi: true,
+    bluetooth: true,
+    notifications: true,
+    focus: false,
+    brightness: 80,
+    volume: 60,
+  });
 
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
@@ -1487,7 +1660,12 @@ export default function App() {
         }}
       />
 
-      <ControlCenter isOpen={isControlCenterOpen} onClose={() => setIsControlCenterOpen(false)} />
+      <ControlCenter 
+        isOpen={isControlCenterOpen} 
+        onClose={() => setIsControlCenterOpen(false)} 
+        settings={settings}
+        setSettings={setSettings}
+      />
       <AppLibrary 
         isOpen={isAppLibraryOpen} 
         onClose={() => setIsAppLibraryOpen(false)} 
@@ -1638,6 +1816,10 @@ export default function App() {
           <AppWindow 
             app={activeApp} 
             onClose={() => setActiveApp(null)} 
+            photos={photos}
+            setPhotos={setPhotos}
+            settings={settings}
+            setSettings={setSettings}
           />
         )}
       </AnimatePresence>

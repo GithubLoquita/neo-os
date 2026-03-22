@@ -4,6 +4,7 @@ const SOUNDS = {
   notification: 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3',
   unlock: 'https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3',
   lock: 'https://assets.mixkit.co/active_storage/sfx/2567/2567-preview.mp3',
+  camera: 'https://assets.mixkit.co/active_storage/sfx/2569/2569-preview.mp3',
 };
 
 class SoundService {

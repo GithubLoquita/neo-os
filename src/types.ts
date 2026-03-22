@@ -31,3 +31,9 @@ export type Notification = {
   appId: string;
   timestamp: Date;
 };
+
+export type Photo = {
+  id: string;
+  url: string;
+  timestamp: number;
+};
