@@ -50,7 +50,10 @@ import {
   Star,
   Hash,
   Delete,
-  X
+  X,
+  RotateCw,
+  Crop,
+  Contrast
 } from 'lucide-react';
 import { SYSTEM_APPS } from './constants';
 import { AppConfig, Photo } from './types';
@@ -954,8 +957,185 @@ const CameraApp = ({ photos, setPhotos }: { photos: Photo[], setPhotos: any }) =
   );
 };
 
-const GalleryApp = ({ photos }: { photos: Photo[] }) => {
+const PhotoEditor = ({ photo, onSave, onCancel }: { photo: Photo, onSave: (newUrl: string) => void, onCancel: () => void }) => {
+  const [rotation, setRotation] = useState(0);
+  const [filter, setFilter] = useState('none');
+  const [brightness, setBrightness] = useState(100);
+  const [contrast, setContrast] = useState(100);
+  const [isCropping, setIsCropping] = useState(false);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+  const filters = [
+    { name: 'None', value: 'none' },
+    { name: 'Mono', value: 'grayscale(100%)' },
+    { name: 'Sepia', value: 'sepia(100%)' },
+    { name: 'Invert', value: 'invert(100%)' },
+    { name: 'Vivid', value: 'saturate(200%)' },
+    { name: 'Cool', value: 'hue-rotate(180deg)' },
+  ];
+
+  const handleSave = () => {
+    const canvas = canvasRef.current;
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = photo.url;
+    img.onload = () => {
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // Set canvas size based on rotation
+      if (rotation % 180 === 0) {
+        canvas.width = img.width;
+        canvas.height = img.height;
+      } else {
+        canvas.width = img.height;
+        canvas.height = img.width;
+      }
+
+      ctx.filter = `${filter} brightness(${brightness}%) contrast(${contrast}%)`;
+      
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate((rotation * Math.PI) / 180);
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+
+      if (isCropping) {
+        // Simple square crop from center
+        const size = Math.min(canvas.width, canvas.height);
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = size;
+        tempCanvas.height = size;
+        const tempCtx = tempCanvas.getContext('2d');
+        if (tempCtx) {
+          tempCtx.drawImage(canvas, (canvas.width - size) / 2, (canvas.height - size) / 2, size, size, 0, 0, size, size);
+          onSave(tempCanvas.toDataURL('image/jpeg', 0.9));
+        }
+      } else {
+        onSave(canvas.toDataURL('image/jpeg', 0.9));
+      }
+    };
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] bg-black flex flex-col">
+      <div className="p-4 flex items-center justify-between glass-dark">
+        <button onClick={onCancel} className="text-white/60 font-medium">Cancel</button>
+        <h2 className="font-bold">Edit</h2>
+        <button onClick={handleSave} className="text-yellow-400 font-bold">Save</button>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center p-8 relative overflow-hidden">
+        <canvas ref={canvasRef} className="hidden" />
+        <div className="relative transition-all duration-300" style={{ 
+          transform: `rotate(${rotation}deg)`,
+          filter: `${filter} brightness(${brightness}%) contrast(${contrast}%)`,
+        }}>
+          <img 
+            src={photo.url} 
+            alt="Editing" 
+            className={`max-w-full max-h-[50vh] object-contain rounded-lg shadow-2xl ${isCropping ? 'aspect-square object-cover' : ''}`} 
+            referrerPolicy="no-referrer" 
+          />
+          {isCropping && (
+            <div className="absolute inset-0 border-2 border-yellow-400 border-dashed pointer-events-none">
+              <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 opacity-30">
+                {[...Array(9)].map((_, i) => <div key={i} className="border border-white/50" />)}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="p-6 glass-dark space-y-6">
+        <div className="flex justify-center gap-8">
+          <button 
+            onClick={() => {
+              soundService.play('tap');
+              setRotation(r => (r + 90) % 360);
+            }}
+            className="flex flex-col items-center gap-2 opacity-60 hover:opacity-100"
+          >
+            <RotateCw size={24} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">Rotate</span>
+          </button>
+          <button 
+            onClick={() => {
+              soundService.play('tap');
+              setIsCropping(!isCropping);
+            }}
+            className={`flex flex-col items-center gap-2 ${isCropping ? 'text-yellow-400 opacity-100' : 'opacity-60'}`}
+          >
+            <Crop size={24} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">Crop</span>
+          </button>
+        </div>
+
+        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+          {filters.map((f) => (
+            <button
+              key={f.name}
+              onClick={() => {
+                soundService.play('tap');
+                setFilter(f.value);
+              }}
+              className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors ${filter === f.value ? 'bg-yellow-400 text-black' : 'bg-white/5 text-white/60'}`}
+            >
+              {f.name}
+            </button>
+          ))}
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <Sun size={16} className="opacity-40" />
+            <input 
+              type="range" 
+              min="50" 
+              max="150" 
+              value={brightness} 
+              onChange={(e) => setBrightness(parseInt(e.target.value))}
+              className="flex-1 accent-yellow-400"
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <Contrast size={16} className="opacity-40" />
+            <input 
+              type="range" 
+              min="50" 
+              max="150" 
+              value={contrast} 
+              onChange={(e) => setContrast(parseInt(e.target.value))}
+              className="flex-1 accent-yellow-400"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const GalleryApp = ({ photos, setPhotos }: { photos: Photo[], setPhotos: any }) => {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+
+  const handleSaveEdit = (newUrl: string) => {
+    if (selectedPhoto) {
+      setPhotos((prev: Photo[]) => prev.map(p => 
+        p.id === selectedPhoto.id ? { ...p, url: newUrl } : p
+      ));
+      setSelectedPhoto({ ...selectedPhoto, url: newUrl });
+      setIsEditing(false);
+      soundService.play('camera' as any);
+    }
+  };
+
+  const handleDelete = () => {
+    if (selectedPhoto) {
+      soundService.play('tap');
+      setPhotos((prev: Photo[]) => prev.filter(p => p.id !== selectedPhoto.id));
+      setSelectedPhoto(null);
+    }
+  };
 
   return (
     <div className="flex-1 bg-black overflow-y-auto no-scrollbar relative">
@@ -1005,14 +1185,32 @@ const GalleryApp = ({ photos }: { photos: Photo[] }) => {
           >
             <div className="p-4 flex items-center justify-between">
               <button onClick={() => setSelectedPhoto(null)} className="text-blue-500 font-semibold">Done</button>
-              <div className="flex gap-6">
+              <div className="flex gap-6 items-center">
+                <button 
+                  onClick={() => setIsEditing(true)}
+                  className="text-yellow-400 font-bold text-sm uppercase tracking-widest"
+                >
+                  Edit
+                </button>
                 <Heart size={20} className="opacity-60" />
-                <Trash2 size={20} className="opacity-60" />
+                <Trash2 
+                  size={20} 
+                  className="opacity-60 text-rose-500" 
+                  onClick={handleDelete}
+                />
               </div>
             </div>
             <div className="flex-1 flex items-center justify-center p-4">
               <img src={selectedPhoto.url} alt="Selected" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" referrerPolicy="no-referrer" />
             </div>
+
+            {isEditing && (
+              <PhotoEditor 
+                photo={selectedPhoto} 
+                onSave={handleSaveEdit}
+                onCancel={() => setIsEditing(false)}
+              />
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -1337,7 +1535,7 @@ const AppWindow = ({ app, onClose, photos, setPhotos, settings, setSettings }: {
       case 'camera':
         return <CameraApp photos={photos} setPhotos={setPhotos} />;
       case 'gallery':
-        return <GalleryApp photos={photos} />;
+        return <GalleryApp photos={photos} setPhotos={setPhotos} />;
       case 'files':
         return <FilesApp />;
       case 'calendar':
