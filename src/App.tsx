@@ -513,12 +513,132 @@ const PhoneApp = () => {
 };
 
 const MessagesApp = () => {
+  const [selectedChat, setSelectedChat] = useState<null | number>(null);
+  const [messageText, setMessageText] = useState('');
+
   const chats = [
-    { name: 'Sarah Miller', last: 'See you at 8! 🚀', time: '9:41 AM', unread: true },
-    { name: 'Tech Support', last: 'Your NeoOS update is ready.', time: 'Yesterday', unread: false },
-    { name: 'Alex Rivera', last: 'Did you check the new widgets?', time: 'Tuesday', unread: false },
-    { name: 'Mom', last: 'Call me when you can.', time: 'Monday', unread: true },
-  ];
+    { 
+      id: 0,
+      name: 'Sarah Miller', 
+      last: 'See you at 8! 🚀', 
+      time: '9:41 AM', 
+      unread: true,
+      timestamp: new Date().setHours(9, 41),
+      messages: [
+        { text: "Hey! Are we still on for tonight?", sender: 'them', time: '9:30 AM' },
+        { text: "Yeah, definitely! What time works?", sender: 'me', time: '9:35 AM' },
+        { text: "See you at 8! 🚀", sender: 'them', time: '9:41 AM' },
+      ]
+    },
+    { 
+      id: 1,
+      name: 'Tech Support', 
+      last: 'Your NeoOS update is ready.', 
+      time: 'Yesterday', 
+      unread: false,
+      timestamp: new Date().getTime() - 86400000,
+      messages: [
+        { text: "Your NeoOS update is ready.", sender: 'them', time: 'Yesterday' },
+      ]
+    },
+    { 
+      id: 2,
+      name: 'Alex Rivera', 
+      last: 'Did you check the new widgets?', 
+      time: 'Tuesday', 
+      unread: false,
+      timestamp: new Date().getTime() - 86400000 * 5,
+      messages: [
+        { text: "Did you check the new widgets?", sender: 'them', time: 'Tuesday' },
+      ]
+    },
+    { 
+      id: 3,
+      name: 'Mom', 
+      last: 'Call me when you can.', 
+      time: 'Monday', 
+      unread: true,
+      timestamp: new Date().getTime() - 86400000 * 6,
+      messages: [
+        { text: "Call me when you can.", sender: 'them', time: 'Monday' },
+      ]
+    },
+  ].sort((a, b) => b.timestamp - a.timestamp);
+
+  if (selectedChat !== null) {
+    const chat = chats.find(c => c.id === selectedChat)!;
+    return (
+      <div className="flex-1 flex flex-col bg-black">
+        {/* Chat Header */}
+        <div className="p-4 bg-zinc-900/50 backdrop-blur-md border-b border-white/5 flex items-center gap-4">
+          <button 
+            onClick={() => {
+              setSelectedChat(null);
+              soundService.play('tap');
+            }}
+            className="p-2 hover:bg-white/5 rounded-full transition-colors"
+          >
+            <ChevronRight size={20} className="rotate-180" />
+          </button>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center">
+              <User size={20} className="opacity-40" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm">{chat.name}</h3>
+              <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Online</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4 no-scrollbar">
+          {chat.messages.map((msg, i) => (
+            <div 
+              key={i}
+              className={`max-w-[80%] p-4 rounded-2xl text-sm ${
+                msg.sender === 'me' 
+                  ? 'bg-blue-600 self-end rounded-tr-none' 
+                  : 'bg-zinc-800 self-start rounded-tl-none'
+              }`}
+            >
+              <p>{msg.text}</p>
+              <span className="text-[10px] opacity-40 mt-1 block text-right">{msg.time}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Input Area */}
+        <div className="p-4 bg-zinc-900/50 backdrop-blur-md border-t border-white/5 flex items-center gap-3">
+          <button className="p-2 text-white/40 hover:text-white transition-colors">
+            <Plus size={20} />
+          </button>
+          <div className="flex-1 relative">
+            <input 
+              type="text" 
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              placeholder="iMessage"
+              className="w-full h-10 bg-white/10 rounded-full px-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <button 
+            onClick={() => {
+              if (messageText.trim()) {
+                setMessageText('');
+                soundService.play('notification');
+              }
+            }}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+              messageText.trim() ? 'bg-blue-500 text-white' : 'bg-white/5 text-white/20'
+            }`}
+          >
+            <Send size={18} />
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 bg-black overflow-y-auto no-scrollbar">
@@ -535,7 +655,10 @@ const MessagesApp = () => {
             <motion.div 
               key={i}
               whileTap={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
-              onClick={() => soundService.play('tap')}
+              onClick={() => {
+                setSelectedChat(chat.id);
+                soundService.play('tap');
+              }}
               className="flex items-center gap-4 p-4 rounded-2xl cursor-pointer"
             >
               <div className="w-14 h-14 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-900 flex items-center justify-center relative">
